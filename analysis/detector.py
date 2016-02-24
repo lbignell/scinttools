@@ -13,9 +13,14 @@ import scinttools.physics.isotope
 class TDCR:
     '''
     Calculate efficiencies, etc. for a TDCR detector.
+
     Limitations (to be fixed):
+
     - Using the same collection efficiency for each tube.
+
     - A single, user-entered QE.
+
+    - The efficiency extrapolation can only be done for a single beta transition.
     
     Base units: MeV, cm, sec, g.
     '''
@@ -46,7 +51,9 @@ class TDCR:
         beta decay branch.
         
         Arguments:
+
         - number of PMTs
+
         - Optional factor to model efficiency extrapolation.
         '''
         if self.scint is None:
@@ -68,10 +75,15 @@ class TDCR:
         a monoenergetic emission.
         
         Arguments:
+
         - Particle energy (MeV)
+
         - Particle rest mass (MeV/c^2)
+
         - Particle charge (e)
+
         - number of PMTs
+
         - Optional factor to model efficiency extrapolation.
         '''
         if self.scint is None:
@@ -79,6 +91,51 @@ class TDCR:
             return None
         return self._effmodel(KE,Mparticle,Zparticle,factor)**n
 
-    def EfficiencyExtrap(self, factorvals, endpoint, Mparticle, Zparticle):
-        pass
+    def EfficiencyExtrap_beta(self, factorvals, kBvals):
+        '''
+        Calculate the apparent activity for an efficiency extrapolation measurement,
+        for various kB values and TDCRs.
+        
+        Note that the *true* kB value is that given in the registered scintillator.
+        Arguments:
+        
+        - A list of values to multiply the detection efficiency by.
 
+        - A list of kB values (cm/MeV)
+        
+        The beta spectrum and scintillator will be inferred from the
+        currently-registered objects.
+        '''
+        if self.scint is None:
+            print('ERROR!! No scintillator has been registered.')
+            return None
+        elif self.branch is None:
+            print('ERROR!! No branch has been registered.')
+            return None
+        kBtrue = self.scint.kB
+        #Calculate the detection efficiency vs factor for the true kB.
+        #Array stores efficiency[#PMTs][factor]
+        effn_true = [[self.eff_nPMT_beta(n+1,factor) for factor in factorvals]
+                     for n in range(3)]
+        TDCR_true = [effn_true[2][idx]/effn_true[1][idx] for idx in range(len(factorvals))]        
+        #This bit needs careful thought.
+        #The TDCR is observed, so is independent of the estimated kB.
+        #So the problem is to find effn_true[TDCR_wrong], as this is what the
+        #efficiency actually is, as opposed to what we calculate with a
+        #wrong kB.
+        #The ratio effn_wrong[TDCR_wrong]/effn_true[TDCR_wrong] is therefore
+        #proportional to the apparently measured activity.
+        activity_meas = []
+        TDCR_meas = []
+        for thiskB in kBvals:
+            self.scint.setkB(thiskB)
+            effn_wrong = [[self.eff_nPMT_beta(n+1,factor) for factor in factorvals]
+                          for n in range(3)]
+            TDCR_wrong = [effn_wrong[2][idx]/effn_wrong[1][idx] for idx in range(len(factorvals))]
+            activity_meas += [[effn_wrong[1][idx]/np.interp(TDCR_wrong[idx],
+                              TDCR_true,effn_true[1][:], left=np.inf,right=np.inf) 
+                              for idx in range(len(factorvals))]]
+            TDCR_meas += [TDCR_wrong]
+        #reset kB to its original value
+        self.scint.setkB(kBtrue)        
+        return activity_meas, TDCR_meas, TDCR_true, effn_true

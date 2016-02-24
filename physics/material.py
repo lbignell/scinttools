@@ -85,3 +85,7 @@ class Scintillator:
         Birks_fn = lambda KE,Mparticle,Zparticle: 1/(1 + 
             self.kB*self.BetheBloch(KE, Mparticle, Zparticle))
         return sp.integrate.quad(Birks_fn, 0, KE, args=(Mparticle, Zparticle))
+
+    def setkB(self, kB):
+        self.kB = kB
+        return

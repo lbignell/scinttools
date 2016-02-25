@@ -132,7 +132,7 @@ class TDCR:
         TDCR_meas = []
         for thiskB in kBvals:
             if verbose>0:
-                print('TDCR.eff_extrap_beta: kB = {0}'.format(thiskB))
+                print('TDCR.eff_extrap_beta: kB = {:0.3f}'.format(thiskB))
             self.scint.setkB(thiskB)
             effn_wrong = [[self.eff_nPMT_beta(n+1,factor,verbose-1) for factor in factorvals]
                           for n in range(3)]

@@ -41,11 +41,11 @@ class TDCR:
     def setbranch(self, branch):
         self.branch = branch
 
-    def _effmodel(self, KE, Mparticle, Zparticle, factor):
+    def _effmodel(self, KE, Mparticle, Zparticle, factor,verbose=0):
         return (1 - np.e**(-1*self.CollEff*self.QE*self.scint.LY*
-            self.scint.quenched_en(KE, Mparticle, Zparticle)[0]*factor))
+            self.scint.quenched_en(KE, Mparticle, Zparticle,verbose-1)[0]*factor))
 
-    def eff_nPMT_beta(self, n, factor=1):
+    def eff_nPMT_beta(self, n, factor=1, verbose=0):
         '''
         Calculate the efficiency of 1 PMT to the registered scintillator and
         beta decay branch.
@@ -63,10 +63,13 @@ class TDCR:
             print('ERROR!! No branch has been registered.')
             return None
         eff = lambda KE, Mparticle, Zparticle, n:\
-            self.branch.beta_spec(KE)*self._effmodel(KE,Mparticle,Zparticle,factor)**n
+            self.branch.beta_spec(KE)*self._effmodel(KE,Mparticle,Zparticle,factor,verbose-1)**n
         #I should add a verbosity option later to plot the efficiency spectrum.
         unnorm = sp.integrate.quad(eff, 0, self.branch.Q, 
                                    args=(self.branch.Melec,self.branch.betacharge,n))
+        if verbose>0:
+            print('TDCR.eff_nPMT_beta: n = {0}, factor= {1}, integral = {2} +/- {3}'.format(
+                n, factor, unnorm[0], unnorm[1]))
         return unnorm[0]/sp.integrate.quad(self.branch.beta_spec, 0, self.branch.Q)[0]
         
     def eff_nPMT_monoenergetic(self, KE, Mparticle, Zparticle, n, factor=1):
@@ -91,7 +94,7 @@ class TDCR:
             return None
         return self._effmodel(KE,Mparticle,Zparticle,factor)**n
 
-    def EfficiencyExtrap_beta(self, factorvals, kBvals):
+    def eff_extrap_beta(self, factorvals, kBvals, verbose=0):
         '''
         Calculate the apparent activity for an efficiency extrapolation measurement,
         for various kB values and TDCRs.
@@ -115,7 +118,7 @@ class TDCR:
         kBtrue = self.scint.kB
         #Calculate the detection efficiency vs factor for the true kB.
         #Array stores efficiency[#PMTs][factor]
-        effn_true = [[self.eff_nPMT_beta(n+1,factor) for factor in factorvals]
+        effn_true = [[self.eff_nPMT_beta(n+1,factor,verbose-1) for factor in factorvals]
                      for n in range(3)]
         TDCR_true = [effn_true[2][idx]/effn_true[1][idx] for idx in range(len(factorvals))]        
         #This bit needs careful thought.
@@ -128,8 +131,10 @@ class TDCR:
         activity_meas = []
         TDCR_meas = []
         for thiskB in kBvals:
+            if verbose>0:
+                print('TDCR.eff_extrap_beta: kB = {0}'.format(thiskB))
             self.scint.setkB(thiskB)
-            effn_wrong = [[self.eff_nPMT_beta(n+1,factor) for factor in factorvals]
+            effn_wrong = [[self.eff_nPMT_beta(n+1,factor,verbose-1) for factor in factorvals]
                           for n in range(3)]
             TDCR_wrong = [effn_wrong[2][idx]/effn_wrong[1][idx] for idx in range(len(factorvals))]
             activity_meas += [[effn_wrong[1][idx]/np.interp(TDCR_wrong[idx],

@@ -72,7 +72,7 @@ class Scintillator:
             print('ERROR!! Negative particle energy! Setting dE/dx to 0...')
             return 0
 
-    def quenched_en(self, KE, Mparticle, Zparticle):
+    def quenched_en(self, KE, Mparticle, Zparticle, verbose=0):
         '''
         Calculate the apparent (from the number of photons) energy of a particle
         interaction in the scintillator.
@@ -84,7 +84,11 @@ class Scintillator:
         '''
         Birks_fn = lambda KE,Mparticle,Zparticle: 1/(1 + 
             self.kB*self.BetheBloch(KE, Mparticle, Zparticle))
-        return sp.integrate.quad(Birks_fn, 0, KE, args=(Mparticle, Zparticle))
+        result = sp.integrate.quad(Birks_fn, 0, KE, args=(Mparticle, Zparticle))
+        if verbose>0:
+            print('Scintillator.quenched_en: KE = {0}, kB = {1}, Mparticle = {2}, Quench Integral result = {3} +/- {4}'.format(
+                KE, self.kB, Mparticle, result[0], result[1]))
+        return result
 
     def setkB(self, kB):
         self.kB = kB

@@ -14,17 +14,23 @@ import scinttools.physics.material
 import scinttools.analysis.detector
 import seaborn as sns
 
-C14spec = scinttools.physics.isotope.BetaDecay('Decay to Ground', 0.156476, 6, 14, 1)
-WbLS = scinttools.physics.material.Scintillator('WbLS', 100, 0.044)
+C14spec = scinttools.physics.isotope.BetaDecay('C-14 Decay to Ground', 0.156476, 6, 14, 1)
+WbLS = scinttools.physics.material.Scintillator('1% WbLS', 100, 0.044)
 analyse = scinttools.analysis.detector.TDCR(0.7*0.33, 0.2, scint=WbLS, branch=C14spec)
 factorvals = np.linspace(0.5, 1.5, 101)
 kBvals = np.linspace(0.005, 0.07, 14)
 sns.set_palette("husl", len(kBvals))
 sns.set_style(style='darkgrid')
 sns.set_context('poster')
+#Set some nicer formatting defaults.
 mpl.rcParams['axes.formatter.useoffset']=False
+mpl.rcParams['xtick.labelsize'] = 24
+mpl.rcParams['ytick.labelsize'] = 24
+mpl.rcParams['axes.labelsize'] = 30
+mpl.rcParams['legend.fontsize'] = 20
+mpl.rcParams['axes.titlesize'] = 30
 
-#measuredactivity, TDCR_meas, TDCR_true, effn_true = analyse.eff_extrap_beta(factorvals,kBvals,verbose=1)
+measuredactivity, TDCR_meas, TDCR_true, effn_true = analyse.eff_extrap_beta(factorvals,kBvals,verbose=1)
 
 plt.figure()
 normconst=1
